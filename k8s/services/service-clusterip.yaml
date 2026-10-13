@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: container-platform-service
+  namespace: default
+  labels:
+    app: container-platform-service
+spec:
+  type: ClusterIP
+  selector:
+    app: container-platform-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3000
+  sessionAffinity: None
+---

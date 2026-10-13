@@ -1,0 +1,59 @@
+# Node.js
+node_modules
+npm-debug.log
+yarn-error.log
+yarn.lock
+package-lock.json
+
+# TypeScript compiled output
+dist
+build
+out
+
+# Test coverage
+coverage
+.nyc_output
+
+# IDE and editor
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Kubernetes manifests - se copian manualmente si son necesarios
+# k8s/
+
+# Scripts
+scripts/
+
+# Test files
+test/
+__tests__/
+*.spec.ts
+*.test.ts
+*.e2e.ts
+
+# Configuration files that should not be in image
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp

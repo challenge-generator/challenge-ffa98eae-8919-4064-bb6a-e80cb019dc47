@@ -1,0 +1,107 @@
+version: '3.9'
+
+services:
+  # Servicio principal de la plataforma de contenedores
+  container-platform-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: container-platform-service
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - KUBERNETES_HOST=http://host.docker.internal
+      - KUBERNETES_PORT=6443
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - ./k8s:/app/k8s:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - container-platform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Base de datos PostgreSQL para persistencia
+  postgres:
+    image: postgres:16-alpine
+    container_name: container-platform-db
+    environment:
+      - POSTGRES_USER=cpuser
+      - POSTGRES_PASSWORD=cppassword
+      - POSTGRES_DB=container_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - container-platform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cpuser -d container_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis para caché y sesiones
+  redis:
+    image: redis:7-alpine
+    container_name: container-platform-cache
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - container-platform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Minikube para desarrollo local de Kubernetes
+  minikube:
+    image: minikube:latest
+    container_name: container-platform-minikube
+    privileged: true
+    volumes:
+      - minikube_cache:/minikube/cache
+    networks:
+      - container-platform-network
+    environment:
+      - MINIKUBE_DRIVER=docker
+      - MINIKUBE_MEMORY=4096
+      - MINIKUBE_CPUS=2
+    command: >
+      start
+      --driver=docker
+      --memory=4096
+      --cpus=2
+      --kubernetes-version=v1.28.0
+      --addons=ingress,dashboard,metrics-server
+    restart: on-failure:10
+
+networks:
+  container-platform-network:
+    driver: bridge
+    name: container-platform-net
+
+volumes:
+  postgres_data:
+    name: container-platform-postgres
+  redis_data:
+    name: container-platform-redis
+  minikube_cache:
+    name: container-platform-minikube-cache
